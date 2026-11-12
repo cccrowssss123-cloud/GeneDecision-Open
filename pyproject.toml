@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "genedecision"
+version = "0.1.0"
+readme = "README.md"
+license = {file = "LICENSE"}
+description = "Structured biomedical candidate-gene decision support"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2,<3",
+]
+
+[project.optional-dependencies]
+openai = [
+    "openai>=2,<3",
+]
+
+[dependency-groups]
+test = [
+    "pytest>=8,<9",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+#: The default run is offline: tests marked ``live`` hit the real NCBI
+#: E-utilities and are only executed when explicitly selected with ``-m live``.
+addopts = '-m "not live"'
+markers = [
+    "live: talks to a real external source; excluded from the default run",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/genedecision"]

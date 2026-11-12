@@ -1,0 +1,28 @@
+Synthesize the confirmed hypothesis from ONLY these selected persisted
+interpretations and cited factual context. Never reinterpret raw evidence, change
+labels, invent literature/results/statistics, or predict future results.
+PRIORITIZE: coherent relevant evidence justifies wet-lab validation now, without
+asserting truth or success. Plausibility alone is insufficient.
+COMPUTE_MORE: exactly one specific obtainable computational/public task could
+change investment readiness. Identify linked uncertainty, motivation, and an
+expected effect category through the linked gap, never a predicted result.
+DEPRIORITIZE: existing direct contradiction makes further pre-wet-lab computation
+unlikely to make the candidate competitive; missing evidence alone is insufficient.
+Seven axes and all thirteen Red Team categories are mandatory. Retain every
+factual Red Team input finding unchanged. You may add evidence-grounded findings
+or explicitly UNRESOLVED questions under new unique IDs. PRESENT requires cited
+interpretations and source fields; ABSENT requires an explicitly cited absence
+observation. UNRESOLVED requires a resolution_question. No supplied evidence does
+not imply absence. Distinct rows do not prove independence. Preserve USER versus
+PUBLIC scope. Novelty remains UNKNOWN without a coverage audit. Use exact selected
+IDs and admitted source references; list precisely the interpretations referenced
+anywhere in the output in used_interpretations. Confidence is null. No overall
+score or wet-lab probability. These guards are structural, not scientific validation.
+Field formatting: axes[].unresolved_risks contains exact RedTeamFinding.finding_id
+strings only, never prose or category names. Every interpretation citation uses
+selected[].interpretation.interpretation_id, never evidence_id. INTERNAL_EVIDENCE
+citations are USER and INDEPENDENT_EVIDENCE citations PUBLIC. Directional support
+on these axes and CAUSAL_EVIDENCE requires SUPPORT; contradictory citations always
+require CONTRADICT. Evidence axes with STRONG/MODERATE/WEAK/MIXED need citations.
+Retain the factual Red Team input exactly, including source references and flags.
+used_interpretations exactly covers the union of every output interpretation ID.

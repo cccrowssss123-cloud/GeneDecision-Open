@@ -1,0 +1,27 @@
+"""SQLite persistence for projects, evidence records, and collected sources."""
+
+from genedecision.storage.database import (
+    DEPMAP_ANNOTATION_FIELDS,
+    DEPMAP_DATASET_FILE_FIELDS,
+    DEPMAP_GENE_IDENTITY_FIELDS,
+    DEPMAP_MODEL_FIELDS,
+    DEPMAP_OBSERVATION_FIELDS,
+    DEPMAP_RELEASE_FIELDS,
+    EVIDENCE_FIELDS,
+    PROJECT_FIELDS,
+    SCHEMA_VERSION,
+    EvidenceDatabase,
+)
+
+__all__ = [
+    "DEPMAP_ANNOTATION_FIELDS",
+    "DEPMAP_DATASET_FILE_FIELDS",
+    "DEPMAP_GENE_IDENTITY_FIELDS",
+    "DEPMAP_MODEL_FIELDS",
+    "DEPMAP_OBSERVATION_FIELDS",
+    "DEPMAP_RELEASE_FIELDS",
+    "EVIDENCE_FIELDS",
+    "PROJECT_FIELDS",
+    "SCHEMA_VERSION",
+    "EvidenceDatabase",
+]
