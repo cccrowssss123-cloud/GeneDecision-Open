@@ -78,3 +78,14 @@ __all__ += [
     "load_numeric_condition", "load_numeric_context", "load_numeric_evaluation",
     "replay_numeric_evaluation", "verify_numeric_source",
 ]
+
+from .run import CandidateKey, DiscoveryCandidate, DiscoveryObservation, DiscoveryRun, DiscoveryRunError, run_discovery
+from .bundle import BundleError, BundleManifest, verify_discovery_bundle, write_discovery_bundle
+from .union import CandidateRunEvidence, DiscoveryUnion, UnionCandidate, UnionRun, union_discovery_runs
+
+__all__ += [
+    "CandidateKey", "DiscoveryCandidate", "DiscoveryObservation", "DiscoveryRun",
+    "DiscoveryRunError", "run_discovery", "BundleError", "BundleManifest",
+    "verify_discovery_bundle", "write_discovery_bundle", "CandidateRunEvidence",
+    "DiscoveryUnion", "UnionCandidate", "UnionRun", "union_discovery_runs",
+]

@@ -7,7 +7,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from .identifiers import inspect_identifiers, load_column_contract, load_mapping_reference
-from .categories import evaluate_category_files
+from .categories import evaluate_category_files, load_annotation_reference, load_category_condition
 from .measurements import inspect_measurements, load_measurement_audit_contract
 from .numeric import evaluate_numeric_conditions, load_numeric_condition, load_numeric_context
 from .tables import DatasetInspectionError, inspect_table
@@ -30,9 +30,57 @@ def _read_declaration(path: Path, limit: int) -> bytes:
     return raw
 
 
+def _bundle_command(args, parser) -> int:
+    from .bundle import verify_discovery_bundle, write_discovery_bundle
+    from .run import run_discovery
+
+    def read_optional(path, loader, limit=1024 * 1024):
+        return loader(_read_declaration(path, limit)) if path is not None else None
+
+    try:
+        if args.verify_bundle is not None:
+            manifest = verify_discovery_bundle(args.verify_bundle)
+            status = "BUNDLE_INTEGRITY_VERIFIED"
+        else:
+            run = run_discovery(
+                args.table, load_column_contract(_read_declaration(args.column_contract, 1024 * 1024)),
+                mapping_reference=read_optional(args.mapping_reference, load_mapping_reference, 64 * 1024 * 1024),
+                annotation_reference=read_optional(args.annotation_reference, load_annotation_reference, 64 * 1024 * 1024),
+                category_condition=read_optional(args.category_condition, load_category_condition),
+                measurement_audit_contract=read_optional(args.measurement_audit_contract, load_measurement_audit_contract),
+                numeric_condition=read_optional(args.numeric_condition, load_numeric_condition),
+                numeric_context=read_optional(args.numeric_context, load_numeric_context),
+                combine=args.combine, expected_source_sha256=args.expected_source_sha256,
+                input_format=args.input_format, encoding=args.encoding, confirm_header=args.confirm_header,
+            )
+            manifest = write_discovery_bundle(run, args.export_bundle)
+            status = "BUNDLE_WRITTEN"
+    except DatasetInspectionError as exc:
+        parser.exit(2, str(exc) + "\n")
+    except (ValidationError, ValueError, TypeError, OSError, RecursionError):
+        parser.exit(2, "LOCAL_DISCOVERY_BUNDLE_FAILED\n")
+
+    summary = {
+        "status": status, "row_count": manifest.row_count, "candidate_count": manifest.candidate_count,
+        "row_truth_counts": manifest.row_truth_counts, "numeric_qc_flagged_rows": manifest.numeric_qc_flagged_rows,
+        "warning": manifest.warning, "scientific_validation": manifest.scientific_validation,
+        "data_classification": manifest.data_classification,
+    }
+    if args.json:
+        print(json.dumps(summary, ensure_ascii=True, sort_keys=True))
+    else:
+        counts = manifest.row_truth_counts
+        print(f"{status}; {manifest.warning}; scientific validation: {manifest.scientific_validation}.")
+        print(f"{manifest.row_count} rows (T={counts['T']}, F={counts['F']}, U={counts['U']}); "
+              f"{manifest.candidate_count} exploratory candidates.")
+        if manifest.numeric_qc_flagged_rows is not None:
+            print(f"QC_FAILURE_DECLARED_ROWS: {manifest.numeric_qc_flagged_rows}")
+    return 0
+
+
 def main() -> int:
     parser = SafeArgumentParser(prog="genedecision.discovery", description="Inspect one explicitly selected local CSV/TSV.")
-    parser.add_argument("table", type=Path)
+    parser.add_argument("table", type=Path, nargs="?")
     parser.add_argument("--format", choices=("CSV", "TSV"), dest="input_format")
     parser.add_argument("--encoding", choices=("utf-8-sig", "utf-8", "utf-16"), default="utf-8-sig")
     parser.add_argument("--confirm-header", action="store_true", help="Confirm intentional numeric header names")
@@ -44,7 +92,29 @@ def main() -> int:
     parser.add_argument("--measurement-audit-contract", type=Path, help="Explicit local lexical measurement audit JSON")
     parser.add_argument("--numeric-condition", type=Path, help="Explicit exploratory numeric condition bound to the measurement audit")
     parser.add_argument("--numeric-context", type=Path, help="Optional bound caller context/QC declarations; never scientific validation")
+    local_bundle = parser.add_mutually_exclusive_group()
+    local_bundle.add_argument("--export-bundle", type=Path, help="Write exploratory Discovery output to a new local directory")
+    local_bundle.add_argument("--verify-bundle", type=Path, help="Verify local Discovery bundle file checksums")
+    parser.add_argument("--combine", choices=("ALL", "ANY"), help="Required with both category and numeric conditions in a bundle")
+    parser.add_argument("--expected-source-sha256", help="Require bundle export to use previously inspected source bytes")
     args = parser.parse_args()
+    if args.verify_bundle is not None:
+        if (args.table is not None or args.column_contract is not None or args.mapping_reference is not None
+                or args.annotation_reference is not None or args.category_condition is not None
+                or args.measurement_audit_contract is not None or args.numeric_condition is not None
+                or args.numeric_context is not None or args.combine is not None or args.expected_source_sha256 is not None
+                or args.input_format is not None
+                or args.confirm_header or args.encoding != "utf-8-sig"):
+            parser.error("verify-bundle accepts only a directory and optional JSON output")
+        return _bundle_command(args, parser)
+    if args.table is None:
+        parser.error("a table is required")
+    if args.export_bundle is not None:
+        if args.column_contract is None:
+            parser.error("bundle export requires a column contract")
+        return _bundle_command(args, parser)
+    if args.combine is not None or args.expected_source_sha256 is not None:
+        parser.error("run-specific flags require bundle export")
     if args.mapping_reference is not None and args.column_contract is None:
         parser.error("reference requires contract")
     if args.numeric_condition is not None:
