@@ -1,0 +1,60 @@
+name: Installed wheel checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  wheel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13', '3.14']
+    env:
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build wheel and install it in a fresh environment
+        run: |
+          python -m pip --isolated wheel --no-deps --wheel-dir "$RUNNER_TEMP/wheel-dist" .
+          python -m venv "$RUNNER_TEMP/wheel-venv"
+          "$RUNNER_TEMP/wheel-venv/bin/python" -m pip --isolated install \
+            "$RUNNER_TEMP"/wheel-dist/genedecision-*.whl 'pytest>=8,<9'
+      - name: Test and run both synthetic demos against the installed wheel
+        run: |
+          check_dir=$(mktemp -d "$RUNNER_TEMP/wheel-check.XXXXXX")
+          cp -R tests examples pyproject.toml "$check_dir/"
+          cd "$check_dir"
+          unset PYTHONPATH
+          wheel_python="$RUNNER_TEMP/wheel-venv/bin/python"
+          # The CLI subprocess test sets PYTHONPATH to a relative src directory.
+          # That directory must be absent here so it also uses the installed wheel.
+          test ! -e src
+          "$wheel_python" -I - <<'PY'
+          import sysconfig
+          from importlib.metadata import distribution
+          from pathlib import Path
+
+          import genedecision
+
+          expected = Path(sysconfig.get_path("purelib"), "genedecision", "__init__.py").resolve()
+          installed = Path(distribution("genedecision").locate_file("genedecision/__init__.py")).resolve()
+          actual = Path(genedecision.__file__).resolve()
+          if not actual == installed == expected:
+              raise SystemExit(f"Expected the installed wheel at {expected}, got {actual}")
+          print(f"Testing installed package at {actual}")
+          PY
+          "$wheel_python" -I -m pytest -o pythonpath= -m 'not live' tests
+          "$wheel_python" -I examples/discovery_categories_demo.py
+          "$wheel_python" -I examples/discovery_numeric_demo.py
