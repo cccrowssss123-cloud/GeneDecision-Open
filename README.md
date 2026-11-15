@@ -6,7 +6,7 @@ GeneDecision is an early-stage Python toolkit for exploring candidate genes from
 
 ## Try it with synthetic data
 
-Use Python 3.11 or newer. From this checkout, install the package and run either example:
+Use Python 3.11 or newer. From this checkout, install the package and run the synthetic examples:
 
 ```sh
 python -m venv .venv
@@ -14,15 +14,16 @@ source .venv/bin/activate
 python -m pip install .
 python examples/discovery_categories_demo.py
 python examples/discovery_numeric_demo.py
+python examples/discovery_bundle_demo.py
 ```
 
-Both examples build their own invented inputs and run locally without external services. To inspect the structure of a local table:
+The examples build their own invented inputs and run locally without external services. To inspect the structure of a local table:
 
 ```sh
 python -m genedecision.discovery path/to/table.csv
 ```
 
-See the [Discovery walkthrough](docs/DISCOVERY_WORKFLOW.md), [column and identifier contracts](docs/DISCOVERY_COLUMN_CONTRACT_V1.md), and [exploratory numerical conditions](docs/DISCOVERY_NUMERIC_6B4B.md) for the public interfaces and examples. The repository also contains experimental evidence and interpretation components. The documented, tested workflow for this snapshot is local Discovery.
+See [run, export and combine local Discovery results](docs/DISCOVERY_RUN_AND_EXPORT.md) to go from a table to a reproducible candidate bundle. The [Discovery walkthrough](docs/DISCOVERY_WORKFLOW.md), [column and identifier contracts](docs/DISCOVERY_COLUMN_CONTRACT_V1.md), and [exploratory numerical conditions](docs/DISCOVERY_NUMERIC_6B4B.md) describe the individual steps. The repository also contains experimental evidence and interpretation components. The documented, tested workflow for this snapshot is local Discovery.
 
 ## Tests
 
@@ -35,7 +36,7 @@ The included Discovery tests use synthetic data. Exploratory matches are scienti
 
 ### Reproduce the installed wheel check
 
-On pull requests and pushes to `main`, CI builds a wheel on Ubuntu with Python 3.11–3.14, installs it into a fresh environment, and runs the synthetic tests and both demos. Dependency installation uses public packages; the tests and demos need no external services, credentials or research data.
+On pull requests and pushes to `main`, CI builds a wheel on Ubuntu with Python 3.11–3.14, installs it into a fresh environment, and runs the synthetic tests and demos. Dependency installation uses public packages. The tests and demos need no external services, credentials or research data.
 
 To reproduce one matrix entry locally, run this from the checkout with the corresponding Python on your `PATH`:
 
@@ -72,6 +73,7 @@ PY
   "$wheel_python" -I -m pytest -o pythonpath= -m 'not live' tests
   "$wheel_python" -I examples/discovery_categories_demo.py
   "$wheel_python" -I examples/discovery_numeric_demo.py
+  "$wheel_python" -I examples/discovery_bundle_demo.py
 )
 ```
 

@@ -31,7 +31,7 @@ jobs:
           python -m venv "$RUNNER_TEMP/wheel-venv"
           "$RUNNER_TEMP/wheel-venv/bin/python" -m pip --isolated install \
             "$RUNNER_TEMP"/wheel-dist/genedecision-*.whl 'pytest>=8,<9'
-      - name: Test and run both synthetic demos against the installed wheel
+      - name: Test and run the synthetic demos against the installed wheel
         run: |
           check_dir=$(mktemp -d "$RUNNER_TEMP/wheel-check.XXXXXX")
           cp -R tests examples pyproject.toml "$check_dir/"
@@ -58,3 +58,4 @@ jobs:
           "$wheel_python" -I -m pytest -o pythonpath= -m 'not live' tests
           "$wheel_python" -I examples/discovery_categories_demo.py
           "$wheel_python" -I examples/discovery_numeric_demo.py
+          "$wheel_python" -I examples/discovery_bundle_demo.py

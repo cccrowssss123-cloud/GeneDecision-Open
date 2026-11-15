@@ -1,5 +1,8 @@
 # Run a complete local Discovery example
 
+To evaluate one table, export a verifiable candidate bundle and combine
+independently evaluated tables, use the [Discovery run and export guide](DISCOVERY_RUN_AND_EXPORT.md).
+
 The example uses the existing 6B1/6B2/6B3 public APIs on invented identifiers,
 sources, releases, categories and numbers. It creates one temporary CSV, supplies
 all references in memory, retains every input row and removes the temporary file

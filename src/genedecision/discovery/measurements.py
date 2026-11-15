@@ -222,6 +222,20 @@ def load_measurement_audit_result(text: str | bytes) -> MeasurementAuditResult:
     return _load(text, MeasurementAuditResult, "INVALID_MEASUREMENT_AUDIT_RESULT")
 
 
+def _build_measurement_audit(identifiers, raw_rows, audit, *, audited_at):
+    """Build the existing audit from the identifier inspection's frozen rows."""
+    rows = tuple(MeasurementAuditRow(
+        identifier_record=identifier,
+        cells=tuple(_observe(raw.values[p.column], p) for p in audit.policies),
+    ) for identifier, raw in zip(identifiers.identifiers, raw_rows))
+    payload = dict(identifiers=identifiers, input_binding=_binding(identifiers),
+                   audit_contract=audit, audit_contract_sha256=audit.content_sha256,
+                   rows=rows, counts=_counts(identifiers, rows, audit), audited_at=audited_at)
+    provisional = MeasurementAuditResult.model_construct(**payload, audit_id="pending")
+    payload["audit_id"] = "MEASUREMENTS_" + DatasetManifest.content_digest(provisional.identity_payload())
+    return MeasurementAuditResult(**payload)
+
+
 def inspect_measurements(
     path: str | Path, column_contract: ColumnContract | Mapping,
     audit_contract: MeasurementAuditContract | Mapping, *,
@@ -256,16 +270,7 @@ def inspect_measurements(
         if len(raw_rows) * len(audit.policies) > max_cells:
             raise MeasurementAuditError("MEASUREMENT_CELL_LIMIT")
         identifiers = _build_identifier_inspection(inspection, raw_rows, column, reference)
-        rows = tuple(MeasurementAuditRow(
-            identifier_record=identifier,
-            cells=tuple(_observe(raw.values[p.column], p) for p in audit.policies),
-        ) for identifier, raw in zip(identifiers.identifiers, raw_rows))
-        payload = dict(identifiers=identifiers, input_binding=_binding(identifiers),
-                       audit_contract=audit, audit_contract_sha256=audit.content_sha256,
-                       rows=rows, counts=_counts(identifiers, rows, audit), audited_at=datetime.now(timezone.utc))
-        provisional = MeasurementAuditResult.model_construct(**payload, audit_id="pending")
-        payload["audit_id"] = "MEASUREMENTS_" + DatasetManifest.content_digest(provisional.identity_payload())
-        return MeasurementAuditResult(**payload)
+        return _build_measurement_audit(identifiers, raw_rows, audit, audited_at=datetime.now(timezone.utc))
     except DatasetInspectionError:
         raise
     except (ValueError, TypeError, KeyError, OSError, RecursionError):
